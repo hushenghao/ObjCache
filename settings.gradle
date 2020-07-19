@@ -1,0 +1,3 @@
+include ':objcache'
+include ':app'
+rootProject.name = "ObjCache"
