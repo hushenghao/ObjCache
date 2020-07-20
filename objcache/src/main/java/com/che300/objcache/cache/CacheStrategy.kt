@@ -1,6 +1,6 @@
 package com.che300.objcache.cache
 
-interface CacheStrategy<T> {
+interface CacheStrategy {
 
     companion object {
         const val NONE = 0
@@ -9,10 +9,12 @@ interface CacheStrategy<T> {
 
         const val ALL = -1 shr 1   // -1 >> 1 all bits are 1
 
-        fun hasStrategy(strategy: Int, strategyFlag: Int): Boolean {
+        fun hasStrategy(
+            strategy: Int,
+            @com.che300.objcache.annotation.CacheStrategy strategyFlag: Int
+        ): Boolean {
             return strategy and strategyFlag > 0
         }
     }
 
-    fun cacheStrategy(strategy: Int): T
 }

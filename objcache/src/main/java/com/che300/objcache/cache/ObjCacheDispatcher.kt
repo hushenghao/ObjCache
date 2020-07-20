@@ -1,15 +1,18 @@
 package com.che300.objcache.cache
 
 import com.che300.objcache.ObjCache
-import com.che300.objcache.log
 import com.che300.objcache.operator.CacheOperator
 import com.che300.objcache.operator.SpOperator
 import com.che300.objcache.operator.keyFactor
 import com.che300.objcache.operator.operatorStrategy
-import com.che300.objcache.request.EditRequest
-import com.che300.objcache.request.GetRequest
-import java.lang.reflect.Type
+import com.che300.objcache.request.RequestBuilder
+import com.che300.objcache.util.Files
+import com.che300.objcache.util.log
+import com.che300.objcache.util.logw
+import java.io.IOException
 import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 
 /**
@@ -31,14 +34,14 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
     }
 
     internal fun clear() {
-        log("DEL all")
+        log("DEL all cache")
         memoryCacheManager.clear()
         cacheExecutor.execute(Clear())
         SpOperator.clear()
     }
 
     internal fun <T> put(
-        request: EditRequest,
+        request: RequestBuilder,
         value: T?,
         operator: CacheOperator<T>
     ): Boolean {
@@ -51,10 +54,15 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         } else {
             log("PUT $cacheKey: skip memory")
         }
+
         if (CacheStrategy.hasStrategy(strategy, CacheStrategy.DISK)) {
             cacheExecutor.execute {
                 synchronized(this) {
                     operator.put(cacheKey, value)
+
+                    setLastModifiedNow(cacheKey)
+
+                    trimDiskCache()
                 }
             }
             log("PUT $cacheKey: disk")
@@ -64,19 +72,8 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         return true
     }
 
-    internal fun <T> put(request: EditRequest, type: Type, value: T?): Boolean {
-        val operator = objCache.staticCacheOperatorManager.get<T>(type)
-        return put(request, value, operator)
-    }
-
-
-    internal fun <T> get(request: GetRequest, type: Type, default: T?): T? {
-        val operator = objCache.staticCacheOperatorManager.get<T>(type)
-        return get(request, default, operator)
-    }
-
     internal fun <T> get(
-        request: GetRequest,
+        request: RequestBuilder,
         default: T?,
         operator: CacheOperator<T>
     ): T? {
@@ -104,19 +101,32 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
             log("GET $cacheKey: disk")
             val submit = cacheExecutor.submit(Callable<T> {
                 synchronized(this) {
-                    return@Callable operator.get(cacheKey, default)
+                    val get = operator.get(cacheKey, default)
+
+                    setLastModifiedNow(cacheKey)
+                    return@Callable get
                 }
             })
             // may be block UI Thread
-            val cache = try {
-                submit.get()
-            } catch (e: Exception) {
-                null
-            }
-            if (cache != null && hasMemory) {
-                memoryCacheManager.put(cacheKey, cache)
-            } else if (!hasMemory) {
-                log("PUT $cacheKey: skip memory")
+            var cache: T? = null
+            try {
+                cache = submit.get()
+            } catch (e: CancellationException) {
+                logw("GET $cacheKey: ${e.localizedMessage}")
+            } catch (e: InterruptedException) {
+                logw("GET $cacheKey: ${e.localizedMessage}")
+            } catch (e: ExecutionException) {
+                val cause = e.cause
+                if (cause is RuntimeException) {
+                    throw cause
+                }
+                logw("GET $cacheKey: ${e.localizedMessage}")
+            } finally {
+                if (cache != null && hasMemory) {
+                    memoryCacheManager.put(cacheKey, cache)
+                } else if (!hasMemory) {
+                    log("PUT $cacheKey: skip memory")
+                }
             }
             result = cache
         } else {
@@ -127,6 +137,24 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         }
         log("GET $cacheKey: cache not found")
         return default
+    }
+
+    private fun setLastModifiedNow(key: CacheKey) {
+        val cacheFile = key.cacheFile()
+        try {
+            Files.setLastModifiedNow(cacheFile)
+        } catch (e: IOException) {
+            logw("setLastModified error: $cacheFile")
+        }
+    }
+
+    /**
+     * 删除过期磁盘缓存
+     */
+    private fun trimDiskCache() {
+        val cacheDir = objCache.cacheDir
+        val trimCallable = objCache.lruDiskTrim.TrimCallable(cacheDir)
+        cacheExecutor.submit(trimCallable)
     }
 
 }

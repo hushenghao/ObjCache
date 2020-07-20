@@ -1,6 +1,7 @@
 package com.che300.objcache.cache
 
 import com.che300.objcache.ObjCache
+import com.che300.objcache.util.Utils
 import java.io.File
 import java.util.*
 
@@ -17,7 +18,11 @@ data class CacheKey(val key: String, val factor: String = "") {
      * 磁盘缓存文件名
      */
     fun cacheName(): String {
-        return UUID.nameUUIDFromBytes((key + factor).toByteArray()).toString()
+        val name = "$key:$factor"
+        if (Utils.isDebug()) {
+            return name
+        }
+        return UUID.nameUUIDFromBytes(name.toByteArray()).toString()
     }
 
     override fun toString(): String {

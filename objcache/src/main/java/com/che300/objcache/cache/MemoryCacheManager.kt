@@ -1,7 +1,7 @@
 package com.che300.objcache.cache
 
 import androidx.collection.LruCache
-import com.che300.objcache.log
+import com.che300.objcache.util.log
 
 internal class MemoryCacheManager(private val maxSize: Int) {
 

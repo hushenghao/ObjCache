@@ -1,22 +1,14 @@
-package com.che300.objcache
+package com.che300.objcache.util
 
 import android.content.Context
-import android.util.Log
-import com.che300.objcache.annotation.KeyFactor
-import com.che300.objcache.annotation.OperatorStrategy
-import com.che300.objcache.cache.CacheKey
 import okio.buffer
 import okio.sink
 import okio.source
 import java.io.Closeable
 import java.io.File
 import java.io.IOException
+import java.io.RandomAccessFile
 
-internal fun Any.log(msg: String) {
-    if (Utils.debug) {
-        Log.d(ObjCache.LOG_T, msg)
-    }
-}
 
 internal fun Closeable?.safeClose() {
     this ?: return
@@ -26,31 +18,13 @@ internal fun Closeable?.safeClose() {
     }
 }
 
-internal object Utils {
-
-    internal var debug = false
-
-    fun getKeyFactor(clazz: Class<*>?): KeyFactor? {
-        if (clazz == null) {
-            return null
-        }
-        val annotation = clazz.getAnnotation(KeyFactor::class.java)
-        if (annotation != null) {
-            return annotation
-        }
-        return getKeyFactor(clazz.superclass)
-    }
-
-    fun getOperatorStrategy(clazz: Class<*>?): OperatorStrategy? {
-        if (clazz == null) {
-            return null
-        }
-        val annotation = clazz.getAnnotation(OperatorStrategy::class.java)
-        if (annotation != null) {
-            return annotation
-        }
-        return getOperatorStrategy(clazz.superclass)
-    }
+/**
+ * 文件相关工具
+ *
+ * @author hsh
+ * @since 2020/7/20 6:02 PM
+ */
+object Files {
 
     /**
      * 默认缓存路径
@@ -97,4 +71,33 @@ internal object Utils {
             .close()
     }
 
+    @Throws(IOException::class)
+    internal fun setLastModifiedNow(cacheFile: File) {
+        if (!cacheFile.exists()) {
+            return
+        }
+        val now = System.currentTimeMillis()
+        val modified = cacheFile.setLastModified(now)
+        if (modified) {
+            return
+        }
+        modify(cacheFile)
+    }
+
+    @Throws(IOException::class)
+    private fun modify(file: File) {
+        val size = file.length()
+        if (size == 0L) {
+            if (!file.delete() || !file.createNewFile()) {
+                throw IOException("Error recreate zero-size file $file")
+            }
+            return
+        }
+        val accessFile = RandomAccessFile(file, "rwd")
+        accessFile.seek(size - 1)
+        val lastByte = accessFile.readByte()
+        accessFile.seek(size - 1)
+        accessFile.write(lastByte.toInt())
+        accessFile.close()
+    }
 }

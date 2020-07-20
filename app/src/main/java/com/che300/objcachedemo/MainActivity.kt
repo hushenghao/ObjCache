@@ -4,7 +4,7 @@ import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import com.che300.objcache.ObjCache
+import com.che300.objcache.*
 import com.che300.objcache.cache.CacheStrategy
 import java.io.Serializable
 
@@ -24,43 +24,50 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        ObjCache.Builder(this)
-            .debug(true)
-            .create()
+        ObjCache.debug(true)
 
-        val serializable = ObjCache.get()
+//        ObjCache.Builder(this)
+//            .debug(true)
+//            .maxDiskCount(8)
+//            .maxDiskSize(1024 * 1)
+//            .create()
+
+        Thread {
+            for (i in (0..10)) {
+                ObjCache.putSerializable("Serializable$i", SerializableTest("测试Serializable$i"))
+                Thread.sleep(1000)
+            }
+        }.start()
+
+        val serializable = ObjCache
             .getSerializable("Serializable", SerializableTest("默认值"))
         Log.i(TAG, "onCreate: " + serializable)
 
-        ObjCache.edit()
-            .putSerializable("Serializable", SerializableTest("新的值"))
+        ObjCache.putSerializable("Serializable", SerializableTest("新的值"))
 
-        val serializable1 = ObjCache.get()
+        val serializable1 = ObjCache
             .getSerializable("Serializable", SerializableTest("默认值2"))
         Log.i(TAG, "onCreate: " + serializable1)
 
         Log.i(TAG, "=======================")
 
-        val rect = ObjCache.get()
-            .cacheStrategy(CacheStrategy.DISK)
-            .getParcelable("rect", Rect.CREATOR, Rect())
+        val rect = ObjCache.with(Rect.CREATOR)
+            .get("rect", Rect())
         Log.i(TAG, "读取: " + rect)
 
-        ObjCache.edit()
-            .cacheStrategy(CacheStrategy.DISK)
-            .putParcelable("rect", Rect(1, 2, 3, 4))
+        ObjCache.with(Rect.CREATOR)
+            .put("rect", Rect(1, 2, 3, 4))
 
-        val rect2 = ObjCache.get()
+        val rect2 = ObjCache.with(Rect.CREATOR)
             .cacheStrategy(CacheStrategy.DISK)
-            .getParcelable("rect", Rect.CREATOR, Rect())
+            .get("rect", Rect(4, 3, 2, 1))
         Log.i(TAG, "再次读取: " + rect2)
 
 
-        val boolean = ObjCache.get()
-            .getBoolean("first_in", true)
+        val boolean = ObjCache.getBoolean("first_in", true)
         Log.i(TAG, "onCreate: " + boolean)
         if (boolean) {
-            ObjCache.edit().putBoolean("first_in", false)
+            ObjCache.putBoolean("first_in", false)
         }
     }
 }

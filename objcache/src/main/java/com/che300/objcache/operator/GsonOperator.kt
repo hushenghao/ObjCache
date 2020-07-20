@@ -1,6 +1,6 @@
 package com.che300.objcache.operator
 
-import com.che300.objcache.Utils
+import com.che300.objcache.util.Files
 import com.che300.objcache.annotation.KeyFactor
 import com.che300.objcache.cache.CacheKey
 import com.google.gson.Gson
@@ -12,7 +12,7 @@ internal class GsonOperator<T>(private val type: Type) : CacheOperator<T> {
 
     override fun get(key: CacheKey, default: T?): T? {
         val cacheFile = key.cacheFile()
-        val readUtf8 = Utils.readUtf8(cacheFile)
+        val readUtf8 = Files.readUtf8(cacheFile)
         try {
             return Gson().fromJson<T>(readUtf8, type)
         } catch (e: JsonSyntaxException) {
@@ -27,7 +27,7 @@ internal class GsonOperator<T>(private val type: Type) : CacheOperator<T> {
             return cacheFile.delete()
         }
         val json = Gson().toJson(value)
-        Utils.writeUtf8(cacheFile, json)
+        Files.writeUtf8(cacheFile, json)
         return true
     }
 }

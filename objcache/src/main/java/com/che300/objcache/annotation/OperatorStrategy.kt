@@ -6,4 +6,4 @@ package com.che300.objcache.annotation
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
-annotation class OperatorStrategy(val strategy: Int)
+annotation class OperatorStrategy(@com.che300.objcache.annotation.CacheStrategy val strategy: Int)

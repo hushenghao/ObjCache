@@ -2,7 +2,7 @@ package com.che300.objcache.operator
 
 import com.che300.objcache.annotation.KeyFactor
 import com.che300.objcache.cache.CacheKey
-import com.che300.objcache.safeClose
+import com.che300.objcache.util.safeClose
 import java.io.*
 
 @KeyFactor("Serializable")

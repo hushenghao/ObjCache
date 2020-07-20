@@ -1,12 +1,12 @@
 package com.che300.objcache.operator
 
-import com.che300.objcache.Utils
+import com.che300.objcache.util.Utils
 import com.che300.objcache.annotation.KeyFactor
 import com.che300.objcache.cache.CacheKey
 import com.che300.objcache.cache.CacheStrategy
 
 /**
- * 缓存操作者
+ * 缓存序列化与反序列化接口
  */
 @KeyFactor(keyFactor = "cache")
 interface CacheOperator<T> {
@@ -22,6 +22,7 @@ internal fun CacheOperator<*>.keyFactor(): String {
     return annotation?.keyFactor ?: ""
 }
 
+@com.che300.objcache.annotation.CacheStrategy
 internal fun CacheOperator<*>.operatorStrategy(): Int {
     val annotation = Utils.getOperatorStrategy(this.javaClass)
     return annotation?.strategy ?: CacheStrategy.ALL

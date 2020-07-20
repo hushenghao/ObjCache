@@ -2,18 +2,19 @@ package com.che300.objcache.operator
 
 import android.os.Parcel
 import android.os.Parcelable
-import com.che300.objcache.Utils
+import com.che300.objcache.util.Files
 import com.che300.objcache.annotation.KeyFactor
 import com.che300.objcache.cache.CacheKey
 
 /**
  * Android序列化支持
  */
+@PublishedApi
 @KeyFactor("Parcelable")
 internal open class ParcelableOperator<T : Parcelable> : CacheOperator<T> {
 
     override fun get(key: CacheKey, default: T?): T? {
-        throw IllegalArgumentException("无法反序列化Parcelable")
+        throw IllegalArgumentException("无法解析Parcelable, CREATOR未设置")
     }
 
     override fun put(key: CacheKey, value: T?): Boolean {
@@ -26,11 +27,12 @@ internal open class ParcelableOperator<T : Parcelable> : CacheOperator<T> {
         parcel.setDataPosition(0)
         val byteArray = parcel.marshall()
 
-        Utils.writeBytes(cacheFile, byteArray)
+        Files.writeBytes(cacheFile, byteArray)
         parcel.recycle()
         return true
     }
 
+    @PublishedApi
     internal class Get<T : Parcelable>(private val creator: Parcelable.Creator<T>) :
         ParcelableOperator<T>() {
 
@@ -39,7 +41,7 @@ internal open class ParcelableOperator<T : Parcelable> : CacheOperator<T> {
             val parcel = Parcel.obtain()
             var result: T? = null
             try {
-                val byteArray = Utils.readBytes(cacheFile)
+                val byteArray = Files.readBytes(cacheFile)
                 if (byteArray != null) {
                     parcel.unmarshall(byteArray, 0, byteArray.size)
                     parcel.setDataPosition(0)
