@@ -44,9 +44,18 @@ inline fun <reified T : Parcelable> ObjCache.Companion.getParcelable(
 
 inline fun <T : Serializable> ObjCache.Companion.getSerializable(
     key: String,
-    default: T? = null
+    default: T?
 ): T? {
-    return this.with(Serializable::class.java).get(key, default)
+    return this.with(Serializable::class.java).get(key, default) as? T
+}
+
+inline fun <reified T : Parcelable> RequestBuilder<T>.get(
+    key: String,
+    creator: Parcelable.Creator<T>,
+    default: T?
+): T? {
+    this.operator = parcelableOperator<T>(creator)
+    return this.get(key, default)
 }
 
 
@@ -57,8 +66,12 @@ inline fun <reified T : Parcelable> Any.parcelableOperator(creator: Parcelable.C
     return ParcelableOperator.Get(creator)
 }
 
-inline fun <reified T : Parcelable> ObjCache.Companion.with(creator: Parcelable.Creator<T>): RequestBuilder {
+inline fun <reified T : Parcelable> ObjCache.Companion.with(creator: Parcelable.Creator<T>): RequestBuilder<T> {
     return this.with(parcelableOperator(creator))
+}
+
+inline fun <reified T> ObjCache.Companion.with(): RequestBuilder<T> {
+    return this.with(T::class.java)
 }
 
 

@@ -26,11 +26,10 @@ class MainActivity : AppCompatActivity() {
 
         ObjCache.debug(true)
 
-//        ObjCache.Builder(this)
-//            .debug(true)
-//            .maxDiskCount(8)
-//            .maxDiskSize(1024 * 1)
-//            .create()
+        ObjCache.Builder(this)
+            .debug(true)
+            .maxDiskCount(10)
+            .create()
 
         Thread {
             for (i in (0..10)) {
@@ -50,6 +49,9 @@ class MainActivity : AppCompatActivity() {
         Log.i(TAG, "onCreate: " + serializable1)
 
         Log.i(TAG, "=======================")
+
+        ObjCache.with<Rect>()
+            .get("rect", Rect.CREATOR, null)
 
         val rect = ObjCache.with(Rect.CREATOR)
             .get("rect", Rect())

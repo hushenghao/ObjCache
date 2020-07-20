@@ -100,6 +100,7 @@ class ObjCache internal constructor(
             ParcelableOperator<Parcelable>()// 只提供了序列化操作，反序列化会抛出异常
         )
         staticCacheOperatorManager.register(Serializable::class.java, SerializableOperator())
+        staticCacheOperatorManager.register(Serializable::class.java, SerializableOperator())
 
         for (entry in cacheOperators) {
             staticCacheOperatorManager.register(entry.key, entry.value)
@@ -131,12 +132,17 @@ class ObjCache internal constructor(
         }
 
         @JvmStatic
-        fun with(type: Type): RequestBuilder {
+        fun <T> with(type: Type): RequestBuilder<T> {
             return RequestBuilder(type)
         }
 
         @JvmStatic
-        fun with(operator: CacheOperator<*>): RequestBuilder {
+        fun <T> with(clazz: Class<T>): RequestBuilder<T> {
+            return RequestBuilder(clazz as Type)
+        }
+
+        @JvmStatic
+        fun <T> with(operator: CacheOperator<T>): RequestBuilder<T> {
             return RequestBuilder(operator)
         }
 

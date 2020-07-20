@@ -41,7 +41,7 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
     }
 
     internal fun <T> put(
-        request: RequestBuilder,
+        request: RequestBuilder<T>,
         value: T?,
         operator: CacheOperator<T>
     ): Boolean {
@@ -73,7 +73,7 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
     }
 
     internal fun <T> get(
-        request: RequestBuilder,
+        request: RequestBuilder<T>,
         default: T?,
         operator: CacheOperator<T>
     ): T? {
