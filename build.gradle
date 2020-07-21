@@ -16,6 +16,7 @@ buildscript {
 
 allprojects {
     repositories {
+        maven { url 'http://172.16.0.236:8081/repository/maven-public/' }
         google()
         jcenter()
     }

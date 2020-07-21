@@ -40,7 +40,8 @@ class MainActivity : AppCompatActivity() {
                     .put("Serializable$i", SerializableTest("测试Serializable缓存$i"))
                 Thread.sleep(1000)
             }
-        }.start()
+        }
+//            .start()
 
         val serializable = ObjCache
             .getSerializable("serializable_test", SerializableTest("默认值"))
@@ -65,6 +66,7 @@ class MainActivity : AppCompatActivity() {
         val rect2 = ObjCache.with(Rect.CREATOR)
             .get("rect", Rect(-1, -1, -1, -1))
         Log.i(TAG, "再次读取: " + rect2)
+        ObjCache.putParcelable("rect",Rect())
 
 
         val boolean = ObjCache.getBoolean("first_in", true)

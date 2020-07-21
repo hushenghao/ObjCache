@@ -1,0 +1,34 @@
+apply plugin: 'maven'
+
+afterEvaluate { project ->
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                pom.groupId = "com.che300.utils"
+                pom.version = VERSION_NAME
+                pom.artifactId = "obj-cache"
+
+                repository(url: RELEASE_REPOSITORY_URL) {
+                    authentication(userName: NEXUS_USERNAME, password: NEXUS_PASSWORD)
+                }
+                snapshotRepository(url: SNAPSHOT_REPOSITORY_URL) {
+                    authentication(userName: NEXUS_USERNAME, password: NEXUS_PASSWORD)
+                }
+
+                pom.project {
+                    name "obj-cache"
+                    packaging "aar"
+                }
+            }
+        }
+    }
+
+    task androidSourcesJar(type: Jar) {
+        classifier = 'sources'
+        from android.sourceSets.main.java.srcDirs
+    }
+
+    artifacts {
+        archives androidSourcesJar
+    }
+}
