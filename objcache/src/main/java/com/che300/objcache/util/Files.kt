@@ -58,6 +58,9 @@ object Files {
     }
 
     internal fun writeUtf8(cacheFile: File, utf8: String) {
+        if (!cacheFile.exists()) {
+            cacheFile.createNewFile()
+        }
         cacheFile.sink()
             .buffer()
             .writeUtf8(utf8)
@@ -65,6 +68,9 @@ object Files {
     }
 
     internal fun writeBytes(cacheFile: File, byteArray: ByteArray) {
+        if (!cacheFile.exists()) {
+            cacheFile.createNewFile()
+        }
         cacheFile.sink()
             .buffer()
             .write(byteArray)

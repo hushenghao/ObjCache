@@ -3,6 +3,9 @@ package com.che300.objcache.cache
 import androidx.collection.LruCache
 import com.che300.objcache.util.log
 
+/**
+ * 内存缓存
+ */
 internal class MemoryCacheManager(private val maxSize: Int) {
 
     private var lruCache = LruCache<CacheKey, Any>(maxSize)

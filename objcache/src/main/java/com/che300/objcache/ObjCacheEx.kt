@@ -78,30 +78,30 @@ inline fun <reified T> ObjCache.Companion.with(): RequestBuilder<T> {
 /**
  * put
  */
-fun ObjCache.Companion.putInt(key: String, value: Int): Boolean {
+inline fun ObjCache.Companion.putInt(key: String, value: Int): Boolean {
     return this.with(Int::class.java).put(key, value)
 }
 
-fun ObjCache.Companion.putLong(key: String, value: Long): Boolean {
+inline fun ObjCache.Companion.putLong(key: String, value: Long): Boolean {
     return this.with(Long::class.java).put(key, value)
 }
 
-fun ObjCache.Companion.putFloat(key: String, value: Float): Boolean {
+inline fun ObjCache.Companion.putFloat(key: String, value: Float): Boolean {
     return this.with(Float::class.java).put(key, value)
 }
 
-fun ObjCache.Companion.putBoolean(key: String, value: Boolean): Boolean {
+inline fun ObjCache.Companion.putBoolean(key: String, value: Boolean): Boolean {
     return this.with(Boolean::class.java).put(key, value)
 }
 
-fun ObjCache.Companion.putString(key: String, value: String?): Boolean {
+inline fun ObjCache.Companion.putString(key: String, value: String?): Boolean {
     return this.with(String::class.java).put(key, value)
 }
 
-fun <T : Parcelable> ObjCache.Companion.putParcelable(key: String, value: T?): Boolean {
+inline fun <T : Parcelable> ObjCache.Companion.putParcelable(key: String, value: T?): Boolean {
     return this.with(Parcelable::class.java).put(key, value)
 }
 
-fun <T : Serializable> ObjCache.Companion.putSerializable(key: String, value: T?): Boolean {
+inline fun <T : Serializable> ObjCache.Companion.putSerializable(key: String, value: T?): Boolean {
     return this.with(Serializable::class.java).put(key, value)
 }

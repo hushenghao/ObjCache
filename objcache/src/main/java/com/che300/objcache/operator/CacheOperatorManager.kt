@@ -5,7 +5,11 @@ import java.io.Serializable
 import java.lang.reflect.GenericArrayType
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
+import java.lang.reflect.WildcardType
 
+/**
+ * 缓存操作者管理器
+ */
 class CacheOperatorManager {
 
     private val cacheOperator = HashMap<Type, CacheOperator<*>>()
@@ -15,6 +19,11 @@ class CacheOperatorManager {
     }
 
     fun <T> get(type: Type): CacheOperator<T> {
+        var operator = cacheOperator[type] as? CacheOperator<T>
+        if (operator != null) {
+            return operator
+        }
+
         var typeOfT = type
         when (type) {
             is Class<*> -> {
@@ -37,8 +46,45 @@ class CacheOperatorManager {
             is GenericArrayType -> {
                 return GsonOperator<T>(type)
             }
+            is WildcardType -> {
+
+            }
         }
-        val cacheOperator = cacheOperator[typeOfT] as? CacheOperator<T>
-        return cacheOperator ?: GsonOperator<T>(typeOfT)
+        operator = cacheOperator[typeOfT] as? CacheOperator<T>
+        return operator ?: GsonOperator<T>(typeOfT)
+    }
+
+    private fun getOperator(type: Type): CacheOperator<*> {
+        when (type) {
+            is Class<*> -> {
+                val genericInterfaces = type.genericInterfaces
+                for (`interface` in genericInterfaces) {
+                    val iClass = `interface` as? Class<*> ?: continue
+                    if (iClass == Parcelable::class.java) {
+                        return BundleOperator()
+                    } else if (iClass == Serializable::class.java) {
+                        return BundleOperator()
+                    }
+                }
+            }
+            is ParameterizedType -> {
+                val actualTypeArguments = type.actualTypeArguments
+                val size = actualTypeArguments.size
+                if (size >= 1) {
+                    val key = getOperator(actualTypeArguments[0])
+                    if (size == 1) {
+                        return key
+                    }
+                    val value = getOperator(actualTypeArguments[1])
+                    if (key.javaClass == value.javaClass) {
+                        return key
+                    }
+                }
+            }
+            is GenericArrayType -> {
+                return getOperator(type.genericComponentType)
+            }
+        }
+        return GsonOperator<Any>(type)
     }
 }

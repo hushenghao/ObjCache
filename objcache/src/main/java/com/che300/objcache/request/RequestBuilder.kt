@@ -8,8 +8,7 @@ import com.che300.objcache.util.log
 import java.lang.reflect.Type
 
 /**
- * @author hsh
- * @since 2020/7/20 11:42 AM
+ * 缓存请求构建
  */
 open class RequestBuilder<T> {
 

@@ -1,5 +1,6 @@
 package com.che300.objcache.cache
 
+import android.os.SystemClock
 import com.che300.objcache.ObjCache
 import com.che300.objcache.operator.CacheOperator
 import com.che300.objcache.operator.SpOperator
@@ -20,6 +21,8 @@ import java.util.concurrent.Executors
  */
 internal class ObjCacheDispatcher(private val objCache: ObjCache) {
 
+    private val lock = Any()
+
     private val cacheExecutor = Executors.newCachedThreadPool()
     private val memoryCacheManager = MemoryCacheManager(objCache.maxMemoryCount)
 
@@ -28,7 +31,12 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
             val cacheDir = ObjCache.default().cacheDir
             val listFiles = cacheDir.listFiles() ?: return
             for (file in listFiles) {
-                file.delete()
+                synchronized(Clear::class) {
+                    if (!file.exists()) {
+                        return@synchronized
+                    }
+                    file.delete()
+                }
             }
         }
     }
@@ -45,9 +53,8 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         value: T?,
         operator: CacheOperator<T>
     ): Boolean {
-        val key = request.key
+        val cacheKey = CacheKey.create(request.key, operator.keyFactor())
         val strategy = request.strategy and operator.operatorStrategy()
-        val cacheKey = CacheKey(key, operator.keyFactor())
 
         if (CacheStrategy.hasStrategy(strategy, CacheStrategy.MEMORY)) {
             memoryCacheManager.put(cacheKey, value)
@@ -56,16 +63,27 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         }
 
         if (CacheStrategy.hasStrategy(strategy, CacheStrategy.DISK)) {
-            cacheExecutor.execute {
-                synchronized(this) {
-                    operator.put(cacheKey, value)
+            val future = cacheExecutor.submit(Callable<Boolean> {
+                var result = false
+                synchronized(lock) {
+                    try {
+                        result = operator.put(cacheKey, value)
+                    } catch (e: IOException) {
+                        logw("PUT $cacheKey error: ${e.localizedMessage}")
+                    }
 
                     setLastModifiedNow(cacheKey)
-
-                    trimDiskCache()
                 }
+                trimDiskCache()
+                return@Callable result
+            })
+            if (future.isDone) {
+                val get = future.get()
+                log("PUT $cacheKey: disk $get")
+                return get
+            } else {
+                log("PUT $cacheKey: disk")
             }
-            log("PUT $cacheKey: disk")
         } else {
             log("PUT $cacheKey: skip disk")
         }
@@ -77,9 +95,8 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         default: T?,
         operator: CacheOperator<T>
     ): T? {
-        val key = request.key
+        val cacheKey = CacheKey.create(request.key, operator.keyFactor())
         val strategy = request.strategy and operator.operatorStrategy()
-        val cacheKey = CacheKey(key, operator.keyFactor())
 
         var result: T? = null
         val hasMemory = CacheStrategy.hasStrategy(strategy, CacheStrategy.MEMORY)
@@ -98,19 +115,25 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         }
 
         if (CacheStrategy.hasStrategy(strategy, CacheStrategy.DISK)) {
-            log("GET $cacheKey: disk")
-            val submit = cacheExecutor.submit(Callable<T> {
+            val future = cacheExecutor.submit(Callable<T> {
                 synchronized(this) {
-                    val get = operator.get(cacheKey, default)
+                    val get: T? = try {
+                        operator.get(cacheKey, default)
+                    } catch (e: IOException) {
+                        logw("GET $cacheKey error: ${e.localizedMessage}")
+                        null
+                    }
 
                     setLastModifiedNow(cacheKey)
                     return@Callable get
                 }
             })
+            log("GET $cacheKey: disk")
+            val s = SystemClock.uptimeMillis()
             // may be block UI Thread
             var cache: T? = null
             try {
-                cache = submit.get()
+                cache = future.get()
             } catch (e: CancellationException) {
                 logw("GET $cacheKey: ${e.localizedMessage}")
             } catch (e: InterruptedException) {
@@ -122,6 +145,10 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
                 }
                 logw("GET $cacheKey: ${e.localizedMessage}")
             } finally {
+                val total = SystemClock.uptimeMillis() - s
+                if (total > 16) {
+                    logw("The main thread is blocked. ${total}ms")
+                }
                 if (cache != null && hasMemory) {
                     memoryCacheManager.put(cacheKey, cache)
                 } else if (!hasMemory) {
@@ -139,6 +166,9 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         return default
     }
 
+    /**
+     * 更新文件修改时间
+     */
     private fun setLastModifiedNow(key: CacheKey) {
         val cacheFile = key.cacheFile()
         try {

@@ -7,6 +7,7 @@ import com.che300.objcache.annotation.KeyFactor
 import com.che300.objcache.annotation.OperatorStrategy
 import com.che300.objcache.cache.CacheKey
 import com.che300.objcache.cache.CacheStrategy
+import java.lang.Character.MIN_VALUE
 
 /**
  * 默认Sp缓存支持
@@ -32,6 +33,20 @@ internal abstract class SpOperator<T> : CacheOperator<T> {
             return true
         }
         return false
+    }
+
+    internal class Char : SpOperator<kotlin.Char>() {
+        override fun get(key: CacheKey, default: kotlin.Char?): kotlin.Char? {
+            return sp.getInt(key.key, (default ?: MIN_VALUE).toInt()).toChar()
+        }
+
+        override fun put(key: CacheKey, value: kotlin.Char?): kotlin.Boolean {
+            if (remove(key, value)) {
+                return true
+            }
+            sp.edit().putInt(key.key, value!!.toInt()).apply()
+            return true
+        }
     }
 
     internal class Int : SpOperator<kotlin.Int>() {
