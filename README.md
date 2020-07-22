@@ -1,6 +1,6 @@
 # ObjCache
 
-一个简化Android对象持久化存储操作的工具组件
+一个简化Android对象持久化存储操作的工具组件。支持二级缓存，支持自定义序列化方案
 
 支持的类型：
 
@@ -58,18 +58,22 @@ ObjCache.Builder(context)
 
 2.使用
 
+* Put
 ```kotlin
-// put
 ObjCache.with<Rect>()                   // 定义序列化类型
     .cacheStrategy(CacheStrategy.DISK)  // 缓存策略
     .put("rect", Rect(1, 2, 3, 4))      // 根据策略存入相应缓存
+```
 
-// get
+* Get
+```kotlin
 val rect = ObjCache.with<Rect>()        // 定义序列化类型
     .cacheStrategy(CacheStrategy.DISK)  // 缓存策略
     .get("rect", Rect.CREATOR, null)    // 从指定策略获取缓存, 单独获取Parcelable类型缓存时需要传递CREATOR
+```
 
-// remove
+* Remove
+```kotlin
 ObjCache.with<Rect>()
     .remove("rect")
 ```
