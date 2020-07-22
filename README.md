@@ -17,7 +17,7 @@
 maven { url 'http://172.16.0.236:8081/repository/maven-public/' }
 
 // 项目依赖
-implementation("com.che300.utils:obj-cache:1.0.0-20200721.084140-1")
+implementation("com.che300.utils:obj-cache:1.0.0-20200722.062500-2")
 ```
 
 ### 简单使用
