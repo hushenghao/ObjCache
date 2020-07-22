@@ -91,6 +91,38 @@ inline fun <T : Serializable> ObjCache.Companion.putSerializable(key: String, va
 
 
 /**
+ * remove
+ */
+inline fun ObjCache.Companion.removeInt(key: String): Boolean {
+    return this.with(Int::class.java).remove(key)
+}
+
+inline fun ObjCache.Companion.removeLong(key: String): Boolean {
+    return this.with(Long::class.java).remove(key)
+}
+
+inline fun ObjCache.Companion.removeFloat(key: String): Boolean {
+    return this.with(Float::class.java).remove(key)
+}
+
+inline fun ObjCache.Companion.removeBoolean(key: String): Boolean {
+    return this.with(Boolean::class.java).remove(key)
+}
+
+inline fun ObjCache.Companion.removeString(key: String): Boolean {
+    return this.with(String::class.java).remove(key)
+}
+
+inline fun <T : Parcelable> ObjCache.Companion.removeParcelable(key: String): Boolean {
+    return this.with(Parcelable::class.java).remove(key)
+}
+
+inline fun <T : Serializable> ObjCache.Companion.removeSerializable(key: String): Boolean {
+    return this.with(Serializable::class.java).remove(key)
+}
+
+
+/**
  * other
  */
 inline fun <reified T> ObjCache.Companion.with(): RequestBuilder<T> {
