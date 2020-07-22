@@ -65,8 +65,17 @@ ObjCache.with<Rect>()                   // 定义序列化类型
     .put("rect", Rect(1, 2, 3, 4))      // 根据策略存入相应缓存
 
 // get
-val rect = ObjCache.with<Rect>()             // 定义序列化类型
-    .cacheStrategy(CacheStrategy.DISK)      // 缓存策略
-    .get("rect", Rect.CREATOR, null)        // 从指定策略获取缓存, 单独获取Parcelable类型缓存时需要传递CREATOR
+val rect = ObjCache.with<Rect>()        // 定义序列化类型
+    .cacheStrategy(CacheStrategy.DISK)  // 缓存策略
+    .get("rect", Rect.CREATOR, null)    // 从指定策略获取缓存, 单独获取Parcelable类型缓存时需要传递CREATOR
+
+// remove
+ObjCache.with<Rect>()
+    .remove("rect")
 ```
 
+3.清空缓存
+
+```kotlin
+ObjCache.clear()
+```

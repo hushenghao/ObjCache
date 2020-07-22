@@ -14,8 +14,7 @@ open class RequestBuilder<T> {
 
     internal lateinit var key: String
 
-    @com.che300.objcache.annotation.CacheStrategy
-    internal var strategy: Int = CacheStrategy.ALL
+    internal var strategy: CacheStrategy = CacheStrategy.ALL
 
     @PublishedApi
     internal var operator: CacheOperator<*>
@@ -29,7 +28,7 @@ open class RequestBuilder<T> {
     }
 
 
-    open fun cacheStrategy(@com.che300.objcache.annotation.CacheStrategy strategy: Int): RequestBuilder<T> {
+    open fun cacheStrategy(strategy: CacheStrategy): RequestBuilder<T> {
         this.strategy = strategy
         return this
     }
@@ -45,11 +44,17 @@ open class RequestBuilder<T> {
         return cacheDispatcher().get<T>(this, default, operator)
     }
 
-    fun put(key: String, value: T?): Boolean {
+    fun put(key: String, value: T): Boolean {
         log("PUT ($key) operator: " + operator.javaClass.name)
         val operator = this.operator as CacheOperator<T>
         this.key = key
         return cacheDispatcher().put<T>(this, value, operator)
     }
 
+    fun remove(key: String): Boolean {
+        log("REMOVE ($key) operator: " + operator.javaClass.name)
+        val operator = this.operator
+        this.key = key
+        return cacheDispatcher().remove(this, operator)
+    }
 }

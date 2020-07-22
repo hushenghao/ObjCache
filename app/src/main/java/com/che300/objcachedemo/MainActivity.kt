@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
                 Thread.sleep(1000)
             }
         }
-//            .start()
+            .start()
 
         val serializable = ObjCache
             .getSerializable("serializable_test", SerializableTest("默认值"))
@@ -60,13 +60,13 @@ class MainActivity : AppCompatActivity() {
             .get("rect", Rect.CREATOR, Rect())
         Log.i(TAG, "读取: " + rect)
 
-        ObjCache.with(Rect.CREATOR)
+        ObjCache.with<Rect>()
             .put("rect", Rect(1, 2, 3, 4))
 
-        val rect2 = ObjCache.with(Rect.CREATOR)
-            .get("rect", Rect(-1, -1, -1, -1))
+        val rect2 = ObjCache.with<Rect>()
+            .get("rect", Rect.CREATOR, Rect(-1, -1, -1, -1))
         Log.i(TAG, "再次读取: " + rect2)
-        ObjCache.putParcelable("rect",Rect())
+        ObjCache.putParcelable("rect", Rect())
 
 
         val boolean = ObjCache.getBoolean("first_in", true)
@@ -91,14 +91,6 @@ class MainActivity : AppCompatActivity() {
         val bundleList = getBundle?.getStringArrayList("list")
         Log.i(TAG, "onCreate: list size: " + bundleList?.size)
 
-        ObjCache.with<List<String>>()
-            .cacheStrategy(CacheStrategy.DISK)
-            .put("list_test", list)
-        val getList = ObjCache.with<List<String>>()
-            .cacheStrategy(CacheStrategy.DISK)
-            .get("list_test", emptyList())
-        Log.i(TAG, "onCreate: list size: " + getList?.size)
-
         ObjCache.with<Serializable>()
             .cacheStrategy(CacheStrategy.DISK)
             .put("list_test", list)
@@ -106,5 +98,18 @@ class MainActivity : AppCompatActivity() {
             .cacheStrategy(CacheStrategy.DISK)
             .get("list_test", null) as? ArrayList<String>
         Log.i(TAG, "onCreate: list size: " + list2?.size)
+
+
+        val rects = (1..10).asSequence()
+            .map { Rect(it, it, it, it) }
+            .toMutableList()
+        ObjCache.with<List<Rect>>()
+            .put("rect_list", rects)
+        val rectList = ObjCache.with<List<Rect>>()
+            .get("rect_list", emptyList())
+        Log.i(TAG, "onCreate: rect list size: $rectList")
+
+        ObjCache.with<List<Rect>>()
+            .remove("rect_list")
     }
 }

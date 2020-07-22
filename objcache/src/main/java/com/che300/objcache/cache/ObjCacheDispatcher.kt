@@ -48,21 +48,58 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         SpOperator.clear()
     }
 
+    internal fun remove(
+        request: RequestBuilder<*>,
+        operator: CacheOperator<*>
+    ): Boolean {
+        val cacheKey = CacheKey.create(request.key, operator.keyFactor())
+        val strategy = request.strategy and operator.operatorStrategy()
+        if (hasStrategy(strategy, CacheStrategy.MEMORY)) {
+            memoryCacheManager.remove(cacheKey)
+        } else {
+            log("REMOVE $cacheKey: skip memory")
+        }
+        if (hasStrategy(strategy, CacheStrategy.DISK)) {
+            val future = cacheExecutor.submit(Callable<Boolean> {
+                var result = false
+                synchronized(lock) {
+                    try {
+                        result = operator.remove(cacheKey)
+                    } catch (e: IOException) {
+                        logw("REMOVE $cacheKey error: ${e.localizedMessage}")
+                    }
+                }
+                return@Callable result
+            })
+            if (future.isDone) {
+                val get = future.get()
+                log("REMOVE $cacheKey: disk $get")
+                return get
+            } else {
+                log("REMOVE $cacheKey: disk")
+            }
+        } else {
+            log("REMOVE $cacheKey: skip disk")
+        }
+        return true
+    }
+
     internal fun <T> put(
         request: RequestBuilder<T>,
-        value: T?,
+        value: T,
         operator: CacheOperator<T>
     ): Boolean {
         val cacheKey = CacheKey.create(request.key, operator.keyFactor())
         val strategy = request.strategy and operator.operatorStrategy()
 
-        if (CacheStrategy.hasStrategy(strategy, CacheStrategy.MEMORY)) {
-            memoryCacheManager.put(cacheKey, value)
+        if (hasStrategy(strategy, CacheStrategy.MEMORY)) {
+            val any = value as Any
+            memoryCacheManager.put(cacheKey, any)
         } else {
             log("PUT $cacheKey: skip memory")
         }
 
-        if (CacheStrategy.hasStrategy(strategy, CacheStrategy.DISK)) {
+        if (hasStrategy(strategy, CacheStrategy.DISK)) {
             val future = cacheExecutor.submit(Callable<Boolean> {
                 var result = false
                 synchronized(lock) {
@@ -99,7 +136,7 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         val strategy = request.strategy and operator.operatorStrategy()
 
         var result: T? = null
-        val hasMemory = CacheStrategy.hasStrategy(strategy, CacheStrategy.MEMORY)
+        val hasMemory = hasStrategy(strategy, CacheStrategy.MEMORY)
         if (hasMemory) {
             val memoryCache = memoryCacheManager.get(cacheKey) as? T
             if (memoryCache != null) {
@@ -114,9 +151,9 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
             return result
         }
 
-        if (CacheStrategy.hasStrategy(strategy, CacheStrategy.DISK)) {
+        if (hasStrategy(strategy, CacheStrategy.DISK)) {
             val future = cacheExecutor.submit(Callable<T> {
-                synchronized(this) {
+                synchronized(lock) {
                     val get: T? = try {
                         operator.get(cacheKey, default)
                     } catch (e: IOException) {

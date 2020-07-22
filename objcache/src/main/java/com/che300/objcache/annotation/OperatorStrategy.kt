@@ -1,5 +1,6 @@
 package com.che300.objcache.annotation
 
+import com.che300.objcache.cache.CacheStrategy
 import com.che300.objcache.operator.CacheOperator
 import com.che300.objcache.operator.SpOperator
 
@@ -11,4 +12,4 @@ import com.che300.objcache.operator.SpOperator
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
-annotation class OperatorStrategy(@com.che300.objcache.annotation.CacheStrategy val strategy: Int)
+annotation class OperatorStrategy(val strategy: CacheStrategy)

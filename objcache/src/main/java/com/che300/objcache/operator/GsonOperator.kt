@@ -24,7 +24,7 @@ internal class GsonOperator<T>(private val type: Type) : CacheOperator<T> {
         return null
     }
 
-    override fun put(key: CacheKey, value: T?): Boolean {
+    override fun put(key: CacheKey, value: T): Boolean {
         val cacheFile = key.cacheFile()
         if (value == null) {
             return cacheFile.delete()

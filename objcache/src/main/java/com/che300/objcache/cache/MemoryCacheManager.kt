@@ -10,14 +10,14 @@ internal class MemoryCacheManager(private val maxSize: Int) {
 
     private var lruCache = LruCache<CacheKey, Any>(maxSize)
 
-    fun put(cacheKey: CacheKey, any: Any?) {
-        if (any == null) {
-            lruCache.remove(cacheKey)
-            log("DEL $cacheKey: memory")
-            return
-        }
+    fun put(cacheKey: CacheKey, any: Any) {
         lruCache.put(cacheKey, any)
         log("PUT $cacheKey: memory")
+    }
+
+    fun remove(cacheKey: CacheKey) {
+        lruCache.remove(cacheKey)
+        log("REMOVE $cacheKey: memory")
     }
 
     fun get(cacheKey: CacheKey): Any? {

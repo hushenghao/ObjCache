@@ -117,12 +117,11 @@ class ObjCache internal constructor(
 
         lruDiskTrim = LruDiskTrim(diskTrimStrategy)
 
-        staticCacheOperatorManager.register(Char::class.java, SpOperator.Char())
-        staticCacheOperatorManager.register(Int::class.java, SpOperator.Int())
-        staticCacheOperatorManager.register(Long::class.java, SpOperator.Long())
-        staticCacheOperatorManager.register(Float::class.java, SpOperator.Float())
-        staticCacheOperatorManager.register(Boolean::class.java, SpOperator.Boolean())
-        staticCacheOperatorManager.register(String::class.java, SpOperator.String())
+        staticCacheOperatorManager.register(Int::class.java, SpOperator._Int())
+        staticCacheOperatorManager.register(Long::class.java, SpOperator._Long())
+        staticCacheOperatorManager.register(Float::class.java, SpOperator._Float())
+        staticCacheOperatorManager.register(Boolean::class.java, SpOperator._Boolean())
+        staticCacheOperatorManager.register(String::class.java, SpOperator._String())
         staticCacheOperatorManager.register(
             Parcelable::class.java,
             ParcelableOperator<Parcelable>()// 只提供了序列化操作，反序列化会抛出异常

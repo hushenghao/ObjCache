@@ -13,8 +13,15 @@ interface CacheOperator<T> {
 
     fun get(key: CacheKey, default: T?): T?
 
-    fun put(key: CacheKey, value: T?): Boolean
+    fun put(key: CacheKey, value: T): Boolean
 
+    fun remove(key: CacheKey): Boolean {
+        val cacheFile = key.cacheFile()
+        if (!cacheFile.exists()) {
+            return true
+        }
+        return cacheFile.delete()
+    }
 }
 
 /**
@@ -28,8 +35,7 @@ internal fun CacheOperator<*>.keyFactor(): String {
 /**
  * 获取缓存序列化与反序列化实例的缓存策略, Sp默认跳过内存缓存[SpOperator]
  */
-@com.che300.objcache.annotation.CacheStrategy
-internal fun CacheOperator<*>.operatorStrategy(): Int {
+internal fun CacheOperator<*>.operatorStrategy(): CacheStrategy {
     val annotation = Utils.getOperatorStrategy(this.javaClass)
     return annotation?.strategy ?: CacheStrategy.ALL
 }

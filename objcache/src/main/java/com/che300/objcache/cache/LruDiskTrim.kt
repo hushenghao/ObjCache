@@ -67,14 +67,14 @@ internal class LruDiskTrim(private val strategy: Strategy) {
                     if (deleted) {
                         totalSize -= length
                         totalCount--
-                        log("DEL disk cache: $file")
+                        log("TRIM disk cache: $file")
                         trimCount++
                     } else {
-                        logw("DEL disk cache error: $file")
+                        logw("TRIM disk cache error: $file")
                     }
                 } else {
                     if (trimCount > 0) {
-                        log("DEL disk cache size: $trimCount")
+                        log("TRIM disk cache size: $trimCount")
                     }
                     return
                 }

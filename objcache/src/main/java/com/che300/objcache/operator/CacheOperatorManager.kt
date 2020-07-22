@@ -23,17 +23,9 @@ class CacheOperatorManager {
 
         var typeOfT = type
         if (type is Class<*>) {
-            val clazz = typeOfT as Class<*>
-            val genericInterfaces = clazz.genericInterfaces
-            for (`interface` in genericInterfaces) {
-                val iClass = `interface` as? Class<*> ?: continue
-                if (iClass == Parcelable::class.java) {
-                    typeOfT = Parcelable::class.java
-                    break
-                } else if (iClass == Serializable::class.java) {
-                    typeOfT = Serializable::class.java
-                    break
-                }
+            val genericInterface = getGenericInterface(type)
+            if (genericInterface != null) {
+                typeOfT = genericInterface
             }
         }
 //        when (type) {
@@ -48,5 +40,22 @@ class CacheOperatorManager {
 //        }
         operator = cacheOperator[typeOfT] as? CacheOperator<T>
         return operator ?: GsonOperator<T>(typeOfT)
+    }
+
+    private fun getGenericInterface(type: Type): Type? {
+        if (type !is Class<*>) {
+            return null
+        }
+        val clazz = type as Class<*>
+        val genericInterfaces = clazz.genericInterfaces
+        for (`interface` in genericInterfaces) {
+            val iClass = `interface` as? Class<*> ?: continue
+            if (iClass == Parcelable::class.java) {
+                return Parcelable::class.java
+            } else if (iClass == Serializable::class.java) {
+                return Serializable::class.java
+            }
+        }
+        return null
     }
 }

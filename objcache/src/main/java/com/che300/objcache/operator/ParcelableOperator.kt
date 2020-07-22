@@ -17,11 +17,8 @@ internal open class ParcelableOperator<T : Parcelable> : CacheOperator<T> {
         throw IllegalArgumentException("无法解析Parcelable, Parcelable.CREATOR未指定")
     }
 
-    override fun put(key: CacheKey, value: T?): Boolean {
+    override fun put(key: CacheKey, value: T): Boolean {
         val cacheFile = key.cacheFile()
-        if (value == null) {
-            return cacheFile.delete()
-        }
         val parcel = Parcel.obtain()
         value.writeToParcel(parcel, 0)
         parcel.setDataPosition(0)

@@ -5,7 +5,6 @@
 package com.che300.objcache
 
 import android.os.Parcelable
-import com.che300.objcache.operator.CacheOperator
 import com.che300.objcache.operator.ParcelableOperator
 import com.che300.objcache.request.RequestBuilder
 import java.io.Serializable
@@ -39,7 +38,7 @@ inline fun <reified T : Parcelable> ObjCache.Companion.getParcelable(
     creator: Parcelable.Creator<T>,
     default: T?
 ): T? {
-    return this.with(creator).get(key, default)
+    return this.with(T::class.java).get(key, creator, default)
 }
 
 inline fun <T : Serializable> ObjCache.Companion.getSerializable(
@@ -54,24 +53,8 @@ inline fun <reified T : Parcelable> RequestBuilder<T>.get(
     creator: Parcelable.Creator<T>,
     default: T?
 ): T? {
-    this.operator = parcelableOperator<T>(creator)
+    this.operator = ParcelableOperator.Get(creator)
     return this.get(key, default)
-}
-
-
-/**
- * other
- */
-inline fun <reified T : Parcelable> Any.parcelableOperator(creator: Parcelable.Creator<T>): CacheOperator<T> {
-    return ParcelableOperator.Get(creator)
-}
-
-inline fun <reified T : Parcelable> ObjCache.Companion.with(creator: Parcelable.Creator<T>): RequestBuilder<T> {
-    return this.with(parcelableOperator(creator))
-}
-
-inline fun <reified T> ObjCache.Companion.with(): RequestBuilder<T> {
-    return this.with(T::class.java)
 }
 
 
@@ -94,14 +77,22 @@ inline fun ObjCache.Companion.putBoolean(key: String, value: Boolean): Boolean {
     return this.with(Boolean::class.java).put(key, value)
 }
 
-inline fun ObjCache.Companion.putString(key: String, value: String?): Boolean {
+inline fun ObjCache.Companion.putString(key: String, value: String): Boolean {
     return this.with(String::class.java).put(key, value)
 }
 
-inline fun <T : Parcelable> ObjCache.Companion.putParcelable(key: String, value: T?): Boolean {
+inline fun <T : Parcelable> ObjCache.Companion.putParcelable(key: String, value: T): Boolean {
     return this.with(Parcelable::class.java).put(key, value)
 }
 
-inline fun <T : Serializable> ObjCache.Companion.putSerializable(key: String, value: T?): Boolean {
+inline fun <T : Serializable> ObjCache.Companion.putSerializable(key: String, value: T): Boolean {
     return this.with(Serializable::class.java).put(key, value)
+}
+
+
+/**
+ * other
+ */
+inline fun <reified T> ObjCache.Companion.with(): RequestBuilder<T> {
+    return this.with(T::class.java)
 }

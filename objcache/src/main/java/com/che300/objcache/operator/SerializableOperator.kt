@@ -30,12 +30,8 @@ internal class SerializableOperator : CacheOperator<Serializable> {
         return default
     }
 
-    override fun put(key: CacheKey, value: Serializable?): Boolean {
+    override fun put(key: CacheKey, value: Serializable): Boolean {
         val cacheFile = key.cacheFile()
-        if (value == null) {
-            return cacheFile.delete()
-        }
-
         var oos: ObjectOutputStream? = null
         try {
             oos = ObjectOutputStream(FileOutputStream(cacheFile))
@@ -73,12 +69,8 @@ internal class SerializableOperator : CacheOperator<Serializable> {
             return result
         }
 
-        override fun put(key: CacheKey, value: Serializable?): Boolean {
+        override fun put(key: CacheKey, value: Serializable): Boolean {
             val cacheFile = key.cacheFile()
-            if (value == null) {
-                return cacheFile.delete()
-            }
-
             val parcel = Parcel.obtain()
             parcel.writeSerializable(value)
             parcel.setDataPosition(0)
