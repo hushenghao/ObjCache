@@ -4,7 +4,7 @@
 
 支持的类型：
 
-* 基本数据类型、字符类型，使用SharedPreferences实现。
+* 基本数据类型（除byte、char、double）、字符类型
 * Serializable、Parcelable，同时还支持Bundle进行混合存储。
 * 非Serializable、Parcelable类型和List、Map对象，默认会使用Gson进行序列化与反序列化操作，请确保缓存对象支持Gson
 
@@ -53,6 +53,8 @@ ObjCache.Builder(context)
     .debug(BuildConfig.DEBUG)   // 日志开关
     .maxMemoryCount(1000)       // 最大内存缓存数量
     .maxDiskCount(1000)         // 磁盘缓存清理策略
+    .addCacheOperator(Fast::class.java, FastCacheOperator())
+    // 自定义序列化方案，使用Type区分。可以通过当前方法覆盖内置方案
     .create()
 ```
 
@@ -83,3 +85,20 @@ ObjCache.with<Rect>()
 ```kotlin
 ObjCache.clear()
 ```
+
+4.自定义序列化方案
+
+需要实现CacheOperator接口，实现get、put和remove方法。最后在初始化时进行注册。
+
+内置序列化方案
+
+|Type|实现类|序列化方案|
+|:--|:-:|:-:|
+|基本数据类型|SpOperator|SharedPreferences|
+|String|SpOperator$_String|SharedPreferences|
+|Parcelable|ParcelableOperator|Parcelable|
+|Bundle|BundleOperator|Parcelable|
+|Serializable|SerializableOperator$Fast|Serializable|
+|List|GsonOperator|Gson|
+|Map|GsonOperator|Gson|
+|Object|GsonOperator|Gson|

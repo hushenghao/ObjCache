@@ -24,14 +24,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        ObjCache.debug(true)
-
 //        ObjCache.clear()
 
-//        ObjCache.Builder(this)
-//            .debug(true)
-//            .maxDiskCount(10)
-//            .create()
+        ObjCache.Builder(this)
+            .debug(true)
+            .maxDiskCount(100)
+            .create()
 
         Thread {
             for (i in (0..10)) {
