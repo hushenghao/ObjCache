@@ -1,9 +1,6 @@
 package com.che300.objcache.cache
 
 
-/** 磁盘缓存不检测文件标志位 */
-private const val UNCHECK_FILE_FLAG = 1 shl 1 // 00000010
-
 /**
  * 缓存策略
  */
@@ -22,17 +19,12 @@ enum class CacheStrategy(val value: Int) {
     /**
      * 磁盘缓存
      */
-    DISK(1 shl 1),  // 00000100
-
-    /**
-     * 磁盘缓存, 但是不检测文件. 比如SP缓存
-     */
-    DISK_UNCHECK_FILE(DISK.value or UNCHECK_FILE_FLAG),// 00000110
+    DISK(1 shl 1),  // 00000010
 
     /**
      * 包含内存缓存和磁盘缓存
      */
-    ALL(-1 shr 1 and UNCHECK_FILE_FLAG.inv()),   // -1 >> 1, all bits are 1. 除了第2位以外都是1.// 11111101
+    ALL(-1 shr 1),   // -1 >> 1, all bits are 1.
 
 }
 

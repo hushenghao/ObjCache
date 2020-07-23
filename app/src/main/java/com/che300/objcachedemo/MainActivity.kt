@@ -59,12 +59,13 @@ class MainActivity : AppCompatActivity() {
         Log.i(TAG, "读取: " + rect)
 
         ObjCache.with<Rect>()
+            .cacheStrategy(CacheStrategy.DISK)
             .put("rect", Rect(1, 2, 3, 4))
 
         val rect2 = ObjCache.with<Rect>()
+            .cacheStrategy(CacheStrategy.DISK)
             .get("rect", Rect.CREATOR, Rect(-1, -1, -1, -1))
         Log.i(TAG, "再次读取: " + rect2)
-        ObjCache.putParcelable("rect", Rect())
 
 
         val boolean = ObjCache.getBoolean("first_in", true)

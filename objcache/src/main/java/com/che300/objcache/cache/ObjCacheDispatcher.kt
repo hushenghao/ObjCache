@@ -53,8 +53,9 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         operator: CacheOperator<*>
     ): Boolean {
         val cacheKey = CacheKey.create(request.key, operator.keyFactor())
+        log("REMOVE $cacheKey: operator " + operator.javaClass.name)
         val operatorStrategy = operator.operatorStrategy()
-        val strategy = request.strategy and operatorStrategy
+        val strategy = request.strategy and operatorStrategy.strategy
         if (strategy.hasStrategy(CacheStrategy.MEMORY)) {
             memoryCacheManager.remove(cacheKey)
         } else {
@@ -63,7 +64,7 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         if (strategy.hasStrategy(CacheStrategy.DISK)) {
             val future = cacheExecutor.submit(Callable<Boolean> {
                 synchronized(lock) {
-                    if (operatorStrategy != CacheStrategy.DISK_UNCHECK_FILE) {
+                    if (operatorStrategy.defaultFile) {
                         if (!cacheKey.exists()) {
                             return@Callable true
                         }
@@ -98,8 +99,9 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         operator: CacheOperator<T>
     ): Boolean {
         val cacheKey = CacheKey.create(request.key, operator.keyFactor())
+        log("PUT $cacheKey: operator " + operator.javaClass.name)
         val operatorStrategy = operator.operatorStrategy()
-        val strategy = request.strategy and operatorStrategy
+        val strategy = request.strategy and operatorStrategy.strategy
 
         if (strategy.hasStrategy(CacheStrategy.MEMORY)) {
             val any = value as Any
@@ -110,15 +112,15 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
 
         if (strategy.hasStrategy(CacheStrategy.DISK)) {
             val future = cacheExecutor.submit(Callable<Boolean> {
-                var result = false
                 synchronized(lock) {
-                    if (operatorStrategy != CacheStrategy.DISK_UNCHECK_FILE) {
+                    if (operatorStrategy.defaultFile) {
                         if (!cacheKey.exists()) {
                             cacheKey.cacheFile().createNewFile()
                         }
                     } else {
                         log("PUT $cacheKey: uncheck disk file")
                     }
+                    var result = false
                     try {
                         result = operator.put(cacheKey, value)
                     } catch (e: IOException) {
@@ -126,9 +128,11 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
                     }
 
                     setLastModifiedNow(cacheKey)
+
+                    trimDiskCache()
+
+                    return@Callable result
                 }
-                trimDiskCache()
-                return@Callable result
             })
             if (future.isDone) {
                 val get = future.get()
@@ -149,8 +153,9 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         operator: CacheOperator<T>
     ): T? {
         val cacheKey = CacheKey.create(request.key, operator.keyFactor())
+        log("GET $cacheKey: operator " + operator.javaClass.name)
         val operatorStrategy = operator.operatorStrategy()
-        val strategy = request.strategy and operatorStrategy
+        val strategy = request.strategy and operatorStrategy.strategy
 
         var result: T? = null
         val hasMemory = strategy.hasStrategy(CacheStrategy.MEMORY)
@@ -171,14 +176,14 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         if (strategy.hasStrategy(CacheStrategy.DISK)) {
             val future = cacheExecutor.submit(Callable<T> {
                 synchronized(lock) {
-                    if (operatorStrategy != CacheStrategy.DISK_UNCHECK_FILE) {
+                    if (operatorStrategy.defaultFile) {
                         if (!cacheKey.exists()) {
                             return@Callable default
                         }
                     } else {
                         log("GET $cacheKey: uncheck disk file")
                     }
-                    val get: T? = try {
+                    val result: T? = try {
                         operator.get(cacheKey, default)
                     } catch (e: IOException) {
                         logw("GET $cacheKey error: ${e.localizedMessage}")
@@ -186,7 +191,7 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
                     }
 
                     setLastModifiedNow(cacheKey)
-                    return@Callable get
+                    return@Callable result
                 }
             })
             log("GET $cacheKey: disk")

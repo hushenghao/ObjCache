@@ -4,7 +4,6 @@ import com.che300.objcache.ObjCache
 import com.che300.objcache.cache.CacheStrategy
 import com.che300.objcache.cache.ObjCacheDispatcher
 import com.che300.objcache.operator.CacheOperator
-import com.che300.objcache.util.log
 import java.lang.reflect.Type
 
 /**
@@ -38,21 +37,18 @@ open class RequestBuilder<T> {
     }
 
     fun get(key: String, default: T?): T? {
-        log("GET ($key) operator: " + operator.javaClass.name)
         val operator = this.operator as CacheOperator<T>
         this.key = key
         return cacheDispatcher().get<T>(this, default, operator)
     }
 
     fun put(key: String, value: T): Boolean {
-        log("PUT ($key) operator: " + operator.javaClass.name)
         val operator = this.operator as CacheOperator<T>
         this.key = key
         return cacheDispatcher().put<T>(this, value, operator)
     }
 
     fun remove(key: String): Boolean {
-        log("REMOVE ($key) operator: " + operator.javaClass.name)
         val operator = this.operator
         this.key = key
         return cacheDispatcher().remove(this, operator)

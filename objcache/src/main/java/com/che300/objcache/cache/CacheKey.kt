@@ -8,8 +8,8 @@ import java.util.*
 
 /**
  * 缓存key
- * @param key 字符串key入参
- * @param factor 对象序列化类型的因子. [CacheOperator],[KeyFactor]
+ * @property key 字符串key入参
+ * @property factor 对象序列化类型的因子. [CacheOperator],[KeyFactor]
  */
 data class CacheKey(val key: String, val factor: String = "") {
 
