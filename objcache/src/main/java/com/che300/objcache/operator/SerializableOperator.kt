@@ -4,7 +4,6 @@ import android.os.Parcel
 import com.che300.objcache.annotation.KeyFactor
 import com.che300.objcache.cache.CacheKey
 import com.che300.objcache.util.Files
-import com.che300.objcache.util.safeClose
 import java.io.*
 
 /**
@@ -15,31 +14,25 @@ internal class SerializableOperator : CacheOperator<Serializable> {
 
     override fun get(key: CacheKey, default: Serializable?): Serializable? {
         val cacheFile = key.cacheFile()
-        if (!cacheFile.exists()) {
-            return default
-        }
-        var ois: ObjectInputStream? = null
         try {
-            ois = ObjectInputStream(FileInputStream(cacheFile))
-            return (ois.readObject() as? Serializable) ?: default
+            val obj = ObjectInputStream(FileInputStream(cacheFile)).use {
+                it.readObject() as? Serializable
+            }
+            return obj ?: default
         } catch (e: Exception) {
             e.printStackTrace()
-        } finally {
-            ois.safeClose()
         }
         return default
     }
 
     override fun put(key: CacheKey, value: Serializable): Boolean {
         val cacheFile = key.cacheFile()
-        var oos: ObjectOutputStream? = null
         try {
-            oos = ObjectOutputStream(FileOutputStream(cacheFile))
-            oos.writeObject(value)
+            ObjectOutputStream(FileOutputStream(cacheFile)).use {
+                it.writeObject(value)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
-        } finally {
-            oos.safeClose()
         }
         return true
     }

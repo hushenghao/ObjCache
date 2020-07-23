@@ -4,19 +4,10 @@ import android.content.Context
 import okio.buffer
 import okio.sink
 import okio.source
-import java.io.Closeable
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
 
-
-internal fun Closeable?.safeClose() {
-    this ?: return
-    try {
-        this.close()
-    } catch (e: IOException) {
-    }
-}
 
 /**
  * 文件相关工具
@@ -37,57 +28,55 @@ object Files {
         return file
     }
 
-    internal fun readUtf8(cacheFile: File): String? {
-        if (!cacheFile.exists()) {
+    internal fun readUtf8(file: File): String? {
+        if (!file.exists()) {
             return null
         }
-        val buffer = cacheFile.source().buffer()
-        val readUtf8 = buffer.readUtf8()
-        buffer.close()
-        return readUtf8
+        return file.source()
+            .buffer()
+            .use { it.readUtf8() }
     }
 
-    internal fun readBytes(cacheFile: File): ByteArray? {
-        if (!cacheFile.exists()) {
+    internal fun readBytes(file: File): ByteArray? {
+        if (!file.exists()) {
             return null
         }
-        val buffer = cacheFile.source().buffer()
-        val byteArray = buffer.readByteArray()
-        buffer.close()
-        return byteArray
+        return file.source()
+            .buffer()
+            .use { it.readByteArray() }
     }
 
-    internal fun writeUtf8(cacheFile: File, utf8: String) {
-        if (!cacheFile.exists()) {
-            cacheFile.createNewFile()
+    internal fun writeUtf8(file: File, utf8: String) {
+        if (!file.exists()) {
+            file.createNewFile()
         }
-        cacheFile.sink()
+        file.sink()
             .buffer()
             .writeUtf8(utf8)
             .close()
     }
 
-    internal fun writeBytes(cacheFile: File, byteArray: ByteArray) {
-        if (!cacheFile.exists()) {
-            cacheFile.createNewFile()
+    internal fun writeBytes(file: File, byteArray: ByteArray) {
+        if (!file.exists()) {
+            file.createNewFile()
         }
-        cacheFile.sink()
+        file.sink()
             .buffer()
             .write(byteArray)
             .close()
     }
 
     @Throws(IOException::class)
-    internal fun setLastModifiedNow(cacheFile: File) {
-        if (!cacheFile.exists()) {
+    internal fun setLastModifiedNow(file: File) {
+        if (!file.exists()) {
             return
         }
         val now = System.currentTimeMillis()
-        val modified = cacheFile.setLastModified(now)
+        val modified = file.setLastModified(now)
         if (modified) {
             return
         }
-        modify(cacheFile)
+        modify(file)
     }
 
     @Throws(IOException::class)
@@ -99,11 +88,12 @@ object Files {
             }
             return
         }
-        val accessFile = RandomAccessFile(file, "rwd")
-        accessFile.seek(size - 1)
-        val lastByte = accessFile.readByte()
-        accessFile.seek(size - 1)
-        accessFile.write(lastByte.toInt())
-        accessFile.close()
+        RandomAccessFile(file, "rwd")
+            .use {
+                it.seek(size - 1)
+                val lastByte = it.readByte()
+                it.seek(size - 1)
+                it.write(lastByte.toInt())
+            }
     }
 }

@@ -61,15 +61,18 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         }
         if (hasStrategy(strategy, CacheStrategy.DISK)) {
             val future = cacheExecutor.submit(Callable<Boolean> {
-                var result = false
                 synchronized(lock) {
+                    if (!cacheKey.exists()) {
+                        return@Callable true
+                    }
+                    var result = false
                     try {
                         result = operator.remove(cacheKey)
                     } catch (e: IOException) {
                         logw("REMOVE $cacheKey error: ${e.localizedMessage}")
                     }
+                    return@Callable result
                 }
-                return@Callable result
             })
             if (future.isDone) {
                 val get = future.get()
@@ -103,6 +106,9 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
             val future = cacheExecutor.submit(Callable<Boolean> {
                 var result = false
                 synchronized(lock) {
+                    if (!cacheKey.exists()) {
+                        cacheKey.cacheFile().createNewFile()
+                    }
                     try {
                         result = operator.put(cacheKey, value)
                     } catch (e: IOException) {
@@ -154,6 +160,9 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         if (hasStrategy(strategy, CacheStrategy.DISK)) {
             val future = cacheExecutor.submit(Callable<T> {
                 synchronized(lock) {
+                    if (!cacheKey.exists()) {
+                        return@Callable default
+                    }
                     val get: T? = try {
                         operator.get(cacheKey, default)
                     } catch (e: IOException) {

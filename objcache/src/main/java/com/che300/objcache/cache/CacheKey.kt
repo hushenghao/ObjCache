@@ -14,7 +14,7 @@ import java.util.*
 data class CacheKey(val key: String, val factor: String = "") {
 
     companion object {
-        fun create(key: String, factor: String): CacheKey {
+        internal fun create(key: String, factor: String): CacheKey {
             return CacheKey(key, factor)
         }
     }
@@ -40,4 +40,8 @@ data class CacheKey(val key: String, val factor: String = "") {
     override fun toString(): String {
         return "($key:$factor)"
     }
+}
+
+internal fun CacheKey.exists(): Boolean {
+    return cacheFile().exists()
 }
