@@ -53,17 +53,22 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         operator: CacheOperator<*>
     ): Boolean {
         val cacheKey = CacheKey.create(request.key, operator.keyFactor())
-        val strategy = request.strategy and operator.operatorStrategy()
-        if (hasStrategy(strategy, CacheStrategy.MEMORY)) {
+        val operatorStrategy = operator.operatorStrategy()
+        val strategy = request.strategy and operatorStrategy
+        if (strategy.hasStrategy(CacheStrategy.MEMORY)) {
             memoryCacheManager.remove(cacheKey)
         } else {
             log("REMOVE $cacheKey: skip memory")
         }
-        if (hasStrategy(strategy, CacheStrategy.DISK)) {
+        if (strategy.hasStrategy(CacheStrategy.DISK)) {
             val future = cacheExecutor.submit(Callable<Boolean> {
                 synchronized(lock) {
-                    if (!cacheKey.exists()) {
-                        return@Callable true
+                    if (operatorStrategy != CacheStrategy.DISK_UNCHECK_FILE) {
+                        if (!cacheKey.exists()) {
+                            return@Callable true
+                        }
+                    } else {
+                        log("REMOVE $cacheKey: uncheck disk file")
                     }
                     var result = false
                     try {
@@ -93,21 +98,26 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         operator: CacheOperator<T>
     ): Boolean {
         val cacheKey = CacheKey.create(request.key, operator.keyFactor())
-        val strategy = request.strategy and operator.operatorStrategy()
+        val operatorStrategy = operator.operatorStrategy()
+        val strategy = request.strategy and operatorStrategy
 
-        if (hasStrategy(strategy, CacheStrategy.MEMORY)) {
+        if (strategy.hasStrategy(CacheStrategy.MEMORY)) {
             val any = value as Any
             memoryCacheManager.put(cacheKey, any)
         } else {
             log("PUT $cacheKey: skip memory")
         }
 
-        if (hasStrategy(strategy, CacheStrategy.DISK)) {
+        if (strategy.hasStrategy(CacheStrategy.DISK)) {
             val future = cacheExecutor.submit(Callable<Boolean> {
                 var result = false
                 synchronized(lock) {
-                    if (!cacheKey.exists()) {
-                        cacheKey.cacheFile().createNewFile()
+                    if (operatorStrategy != CacheStrategy.DISK_UNCHECK_FILE) {
+                        if (!cacheKey.exists()) {
+                            cacheKey.cacheFile().createNewFile()
+                        }
+                    } else {
+                        log("PUT $cacheKey: uncheck disk file")
                     }
                     try {
                         result = operator.put(cacheKey, value)
@@ -139,10 +149,11 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
         operator: CacheOperator<T>
     ): T? {
         val cacheKey = CacheKey.create(request.key, operator.keyFactor())
-        val strategy = request.strategy and operator.operatorStrategy()
+        val operatorStrategy = operator.operatorStrategy()
+        val strategy = request.strategy and operatorStrategy
 
         var result: T? = null
-        val hasMemory = hasStrategy(strategy, CacheStrategy.MEMORY)
+        val hasMemory = strategy.hasStrategy(CacheStrategy.MEMORY)
         if (hasMemory) {
             val memoryCache = memoryCacheManager.get(cacheKey) as? T
             if (memoryCache != null) {
@@ -157,11 +168,15 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
             return result
         }
 
-        if (hasStrategy(strategy, CacheStrategy.DISK)) {
+        if (strategy.hasStrategy(CacheStrategy.DISK)) {
             val future = cacheExecutor.submit(Callable<T> {
                 synchronized(lock) {
-                    if (!cacheKey.exists()) {
-                        return@Callable default
+                    if (operatorStrategy != CacheStrategy.DISK_UNCHECK_FILE) {
+                        if (!cacheKey.exists()) {
+                            return@Callable default
+                        }
+                    } else {
+                        log("GET $cacheKey: uncheck disk file")
                     }
                     val get: T? = try {
                         operator.get(cacheKey, default)

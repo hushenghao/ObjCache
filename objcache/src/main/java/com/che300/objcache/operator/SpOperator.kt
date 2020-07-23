@@ -14,7 +14,7 @@ import com.che300.objcache.cache.CacheStrategy
  * 默认跳过了内存缓存
  */
 @KeyFactor("SP")
-@OperatorStrategy(strategy = CacheStrategy.DISK)
+@OperatorStrategy(strategy = CacheStrategy.DISK_UNCHECK_FILE)// 忽略文件状态标志
 internal abstract class SpOperator<T> : CacheOperator<T> {
 
     companion object {
