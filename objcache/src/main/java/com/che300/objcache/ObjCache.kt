@@ -15,7 +15,7 @@ import java.io.Serializable
 import java.lang.reflect.Type
 
 class ObjCache internal constructor(
-    internal val context: Context,
+    internal val appContext: Context,
     internal val cacheDir: File,
     internal val maxMemoryCount: Int,
     diskTrimStrategy: LruDiskTrim.Strategy,
@@ -93,7 +93,7 @@ class ObjCache internal constructor(
 
         fun create(): ObjCache {
             return ObjCache(
-                context,
+                context.applicationContext,
                 cacheDir,
                 maxMemoryCount,
                 diskTrimStrategy ?: LruDiskTrim.LazyStrategy(),

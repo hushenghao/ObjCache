@@ -1,5 +1,7 @@
 package com.che300.objcache.cache
 
+import android.app.Application
+import android.os.Looper
 import android.os.SystemClock
 import com.che300.objcache.ObjCache
 import com.che300.objcache.operator.CacheOperator
@@ -24,7 +26,12 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
     private val lock = Any()
 
     private val cacheExecutor = Executors.newCachedThreadPool()
-    private val memoryCacheManager = MemoryCacheManager(objCache.maxMemoryCount)
+    private val memoryCacheManager = MemoryCache(objCache.maxMemoryCount)
+
+    init {
+        val application = objCache.appContext as? Application
+        application?.registerComponentCallbacks(memoryCacheManager)
+    }
 
     private class Clear : Runnable {
         override fun run() {
@@ -42,7 +49,7 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
     }
 
     internal fun clear() {
-        log("DEL all cache")
+        log("CLEAR all cache")
         memoryCacheManager.clear()
         cacheExecutor.execute(Clear())
         SpOperator.clear()
@@ -183,7 +190,7 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
                     } else {
                         log("GET $cacheKey: uncheck disk file")
                     }
-                    val result: T? = try {
+                    val get: T? = try {
                         operator.get(cacheKey, default)
                     } catch (e: IOException) {
                         logw("GET $cacheKey error: ${e.localizedMessage}")
@@ -191,7 +198,7 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
                     }
 
                     setLastModifiedNow(cacheKey)
-                    return@Callable result
+                    return@Callable get
                 }
             })
             log("GET $cacheKey: disk")
@@ -211,9 +218,12 @@ internal class ObjCacheDispatcher(private val objCache: ObjCache) {
                 }
                 logw("GET $cacheKey: ${e.localizedMessage}")
             } finally {
-                val total = SystemClock.uptimeMillis() - s
-                if (total > 16) {
-                    logw("The main thread is blocked. ${total}ms")
+                val myLooper = Looper.myLooper()
+                if (myLooper != null && myLooper == Looper.getMainLooper()) {
+                    val total = SystemClock.uptimeMillis() - s
+                    if (total > 16) {
+                        logw("The main thread is blocked. ${total}ms")
+                    }
                 }
                 if (cache != null && hasMemory) {
                     memoryCacheManager.put(cacheKey, cache)

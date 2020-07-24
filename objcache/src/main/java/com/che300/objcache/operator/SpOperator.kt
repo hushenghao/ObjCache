@@ -19,7 +19,7 @@ internal abstract class SpOperator<T> : CacheOperator<T> {
 
     companion object {
         protected val sp: SharedPreferences =
-            ObjCache.default().context.getSharedPreferences("obj_cache", Context.MODE_PRIVATE)
+            ObjCache.default().appContext.getSharedPreferences("obj_cache", Context.MODE_PRIVATE)
 
         fun clear() {
             sp.edit().clear().apply()
